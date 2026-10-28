@@ -1,0 +1,62 @@
+// Level 2: an apartment — kitchen, living room and hallway joined by doorways.
+export default {
+  id: "apartment",
+  name: "Apartment",
+  description: "Three rooms on one floor. Get the ball through the doorways to the hallway switch.",
+  size: { w: 3200, h: 900 },
+  spawn: { x: 200, y: 100 },
+  switch: { x: 3156, y: 530 },
+  rooms: [
+    { x: 30, y: 30, w: 1070, h: 830, wallpaper: "#cfe0d6", stripe: "#c3d7cb", name: "Kitchen", window: { x: 700, y: 150, w: 220, h: 170 } },
+    { x: 1130, y: 30, w: 1170, h: 830, wallpaper: "#e6d3bf", stripe: "#dcc6ae", name: "Living room", picture: { x: 1500, y: 260, w: 200, h: 130 } },
+    { x: 2330, y: 30, w: 840, h: 830, wallpaper: "#d4d1e6", stripe: "#c8c4dd", name: "Hallway" },
+  ],
+  walls: [
+    { x: 0, y: 0, w: 3200, h: 30 },
+    { x: 0, y: 860, w: 3200, h: 40, floor: true },
+    { x: 0, y: 0, w: 30, h: 900 },
+    { x: 3170, y: 0, w: 30, h: 900 },
+    { x: 1100, y: 30, w: 30, h: 530 },
+    { x: 2300, y: 30, w: 30, h: 530 },
+  ],
+  fixed: [
+    { type: "doorframe", x: 1115, y: 710, w: 66, h: 300 },
+    { type: "doorframe", x: 2315, y: 710, w: 66, h: 300 },
+    { type: "counter", x: 330, y: 770, w: 560 },
+    { type: "shelf", x: 330, y: 330, w: 300 },
+    { type: "sofa", x: 1600, y: 790 },
+    { type: "table", x: 2010, y: 785 },
+  ],
+  moveable: [
+    { type: "stool", x: 820, y: 805 },
+    { type: "basket", x: 2620, y: 808 },
+  ],
+  inventory: {
+    trackStraight: 9,
+    trackCurved: 2,
+    legoLong: 2,
+    book: 3,
+    pillow: 2,
+    tube: 2,
+    carriage: 1,
+    domino: 5,
+    rug: 2,
+  },
+  // Verified in the headless simulation (load with ?solution).
+  solution: {
+    items: [
+      { type: "legoLong", x: 289.4, y: 205.2, deg: 15 },
+      { type: "legoLong", x: 489.3, y: 288, deg: 30 },
+      { type: "trackStraight", x: 690, y: 400.4, deg: 30 },
+      { type: "trackStraight", x: 897.8, y: 520.4, deg: 30 },
+      { type: "trackStraight", x: 1118.6, y: 611.9, deg: 15 },
+      { type: "trackStraight", x: 1355.5, y: 643.1, deg: 0 },
+      { type: "trackStraight", x: 1595.5, y: 643.1, deg: 0 },
+      { type: "trackStraight", x: 1835.5, y: 643.1, deg: 0 },
+      { type: "trackStraight", x: 2075.5, y: 643.1, deg: 0 },
+      { type: "trackStraight", x: 2315.5, y: 643.1, deg: 0 },
+      { type: "trackStraight", x: 2555.5, y: 643.1, deg: 0 },
+      { type: "trackCurved", x: 2840.9, y: 644.1, deg: 15 },
+    ],
+  },
+};

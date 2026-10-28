@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ball Track</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #14110f;
+    --panel: #221d19;
+    --panel2: #2c2520;
+    --line: #3d342d;
+    --text: #f1e9df;
+    --muted: #a99c8f;
+    --accent: #ffcf5a;
+    --go: #4caf6a;
+    --reset: #d9773a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; }
+  #app { display: flex; flex-direction: column; height: 100%; }
+  .hidden { display: none !important; }
+
+  #topbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--panel);
+    border-bottom: 1px solid var(--line); flex: none; }
+  #level-name { font-weight: 700; font-size: 16px; margin-left: 6px; letter-spacing: .02em; }
+  .spacer { flex: 1; }
+  button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { background: #3a3029; }
+  button:disabled { opacity: .45; cursor: default; }
+  button.on { border-color: var(--accent); color: var(--accent); }
+  #btn-go { background: var(--go); border-color: #3b8a53; font-weight: 700; min-width: 96px; color: #fff; }
+  #btn-go.running { background: var(--reset); border-color: #b05e2c; }
+
+  #stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+  #game { display: block; touch-action: none; cursor: default; border-radius: 4px; }
+  #game.panning { cursor: grabbing; }
+
+  #inventory { flex: none; display: flex; gap: 14px; padding: 8px 12px 10px; background: var(--panel);
+    border-top: 1px solid var(--line); overflow-x: auto; min-height: 112px; }
+  #inventory.locked { opacity: .45; pointer-events: none; }
+  .group { flex: none; }
+  .group-title { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0 0 4px 2px; }
+  .slots { display: flex; gap: 6px; }
+  .slot { position: relative; width: 96px; padding: 4px 6px 4px; border-radius: 8px; background: var(--panel2);
+    border: 1px solid var(--line); cursor: grab; text-align: center; touch-action: none; }
+  .slot:hover { border-color: var(--accent); }
+  .slot.empty { opacity: .35; cursor: default; }
+  .slot canvas { display: block; margin: 0 auto; pointer-events: none; }
+  .slot-label { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge { position: absolute; top: 3px; right: 5px; font-weight: 700; font-size: 12px; color: var(--accent); }
+
+  #tooltip { position: fixed; z-index: 30; pointer-events: none; background: #0d0b0aee; border: 1px solid var(--line);
+    padding: 6px 9px; border-radius: 6px; max-width: 240px; display: flex; flex-direction: column; gap: 2px; }
+  #tooltip span { color: var(--muted); font-size: 12px; }
+  #tooltip i { color: var(--accent); font-size: 12px; font-style: normal; }
+
+  #hint { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: #0d0b0add;
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px 8px 14px; display: flex; gap: 10px; align-items: center; }
+
+  .modal { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px 26px; min-width: 300px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.5); text-align: center; }
+  .card h2 { margin: 0 0 6px; font-size: 22px; }
+  .card p { margin: 0 0 16px; color: var(--muted); }
+  .card .row { display: flex; gap: 10px; justify-content: center; }
+  .card .primary { background: var(--go); border-color: #3b8a53; color: #fff; font-weight: 700; }
+  #win { background: transparent; pointer-events: none; align-items: flex-start; padding-top: 14vh; }
+  #win .card { pointer-events: auto; }
+
+  #help { position: fixed; z-index: 25; right: 12px; top: 56px; }
+  #help .card { text-align: left; }
+  #help table { border-collapse: collapse; }
+  #help td { padding: 3px 10px 3px 0; vertical-align: top; }
+  #help td:first-child { color: var(--accent); white-space: nowrap; }
+
+  #select { position: fixed; inset: 0; z-index: 15; background: radial-gradient(circle at 50% 30%, #2b231d, #120f0d 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 16px; overflow: auto; }
+  #select h1 { margin: 0; font-size: 44px; letter-spacing: .04em; }
+  #select h1 b { color: var(--accent); }
+  #select .sub { color: var(--muted); margin-top: -12px; text-align: center; max-width: 560px; }
+  #level-list { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+  .level-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; width: 322px; text-align: left; border-radius: 12px; }
+  .level-card:hover { border-color: var(--accent); }
+  .level-card canvas { border-radius: 6px; display: block; }
+  .level-card.done { border-color: #6c8f4e; }
+  .level-title { display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; }
+  .tick { color: #9fd67a; font-size: 13px; }
+  .level-desc { color: var(--muted); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <button id="btn-levels" title="Level select">☰ Levels</button>
+    <div id="level-name"></div>
+    <div class="spacer"></div>
+    <button id="btn-follow" class="hidden">Follow ball</button>
+    <button id="btn-fit" class="hidden" title="Zoom out to show the whole level">Fit level</button>
+    <button id="btn-restart" title="Remove all placed items">Restart</button>
+    <button id="btn-help" title="Controls">?</button>
+    <button id="btn-go" title="Space">▶ Go</button>
+  </header>
+  <main id="stage">
+    <canvas id="game"></canvas>
+    <div id="hint" class="hidden">Ball stopped — Reset? <button id="hint-reset">↺ Reset</button></div>
+  </main>
+  <footer id="inventory"></footer>
+</div>
+
+<div id="tooltip" class="hidden"></div>
+
+<div id="win" class="modal hidden">
+  <div class="card">
+    <h2 id="win-title">Level complete!</h2>
+    <p>Click! The lights are on.</p>
+    <div class="row">
+      <button id="win-replay">↺ Replay</button>
+      <button id="win-next" class="primary">Next level ▶</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm" class="modal hidden">
+  <div class="card">
+    <p id="confirm-msg"></p>
+    <div class="row">
+      <button id="confirm-no">Cancel</button>
+      <button id="confirm-yes" class="primary">Restart</button>
+    </div>
+  </div>
+</div>
+
+<div id="help" class="hidden">
+  <div class="card">
+    <table>
+      <tr><td>Drag from panel</td><td>place an item</td></tr>
+      <tr><td>Drag item</td><td>move it</td></tr>
+      <tr><td>Q / E, wheel while dragging</td><td>rotate 15°</td></tr>
+      <tr><td>F</td><td>flip (curved track, carriage, domino fall side…)</td></tr>
+      <tr><td>Delete / drag to panel</td><td>return item to inventory</td></tr>
+      <tr><td>Space</td><td>Go / Reset</td></tr>
+      <tr><td>R</td><td>Reset during a run</td></tr>
+      <tr><td>Drag background, arrows / WASD</td><td>pan (large levels)</td></tr>
+      <tr><td>Mouse wheel</td><td>zoom</td></tr>
+    </table>
+  </div>
+</div>
+
+<div id="select" class="hidden">
+  <h1>Ball <b>Track</b></h1>
+  <div class="sub">Build a path from household stuff so the bouncy ball hits the light switch. Press Go to drop the ball.</div>
+  <div id="level-list"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
