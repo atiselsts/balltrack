@@ -1,10 +1,13 @@
 // Drag & drop, selection, rotation, camera pan/zoom and placement validation.
-import { typeDef, isRotatable, BALL_RADIUS } from "./items.js";
+import { typeDef, isRotatable, isFlippable, BALL_RADIUS } from "./items.js";
 import { itemParts, switchPoly } from "./physics.js";
 import { bounds, boundsOverlap, polysOverlap, circle, distToPoly, toLocal, toWorld } from "./geometry.js";
 import { screenToWorld, clampCamera, fitZoom, localBounds } from "./render.js";
 
 const ROT_STEP = Math.PI / 12; // 15°
+const FINE_STEP = Math.PI / 180; // 1°, rotate handle with Shift
+const HANDLE_GAP = 34; // screen pixels between the item and its rotate handle
+const HANDLE_R = 11; // screen pixels
 const RUG_HALF_T = 3;
 const SNAP_PX = 14; // screen pixels
 // Items may touch and slightly interpenetrate at snapped joints between
@@ -97,6 +100,23 @@ export function snapEnds(item, items, tol) {
   return best.at;
 }
 
+// ---- rotate handle ---------------------------------------------------------
+
+// World position of the selected item's rotate handle: above the item's
+// local top edge, so it turns together with the item.
+export function rotateHandle(item, cam) {
+  const k = cam.zoom * cam.scale;
+  const b = localBounds(item);
+  const d = -b.minY + HANDLE_GAP / k;
+  const a = item.angle || 0;
+  return {
+    x: item.x + Math.sin(a) * d,
+    y: item.y - Math.cos(a) * d,
+    r: HANDLE_R / k,
+    base: { x: item.x + Math.sin(a) * -b.minY, y: item.y - Math.cos(a) * -b.minY },
+  };
+}
+
 // ---- picking -------------------------------------------------------------
 
 export function pickItem(items, pt, tol) {
@@ -175,11 +195,24 @@ export function initInput(G) {
     G.changed();
   };
 
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
   canvas.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 && e.button !== 1) return;
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
     e.preventDefault();
     lastPointer = e;
     const cp = canvasPoint(e);
+    // right click: rotate the item under the pointer (Shift: other way)
+    if (e.button === 2) {
+      if (G.phase !== "build" || G.drag) return;
+      const tol = 6 / (G.cam.zoom * G.cam.scale);
+      const hit = pickItem(G.items, worldPoint(e), Math.max(tol, 4));
+      if (hit) {
+        G.selected = hit;
+        G.rotateItem(hit, e.shiftKey ? -1 : 1);
+      }
+      return;
+    }
     const mm = G.minimapHit(cp.x, cp.y);
     if (mm) {
       G.centerOn(mm.x, mm.y);
@@ -188,6 +221,14 @@ export function initInput(G) {
       return;
     }
     const wp = worldPoint(e);
+    if (G.phase === "build" && e.button === 0 && G.selected && isRotatable(typeDef(G.selected.type))) {
+      const h = rotateHandle(G.selected, G.cam);
+      if (Math.hypot(wp.x - h.x, wp.y - h.y) <= h.r * 1.4) {
+        G.rotDrag = { item: G.selected, orig: G.selected.angle, valid: true };
+        G.ui.hideTooltip();
+        return;
+      }
+    }
     if (G.phase === "build" && e.button === 0) {
       const tol = 6 / (G.cam.zoom * G.cam.scale);
       const hit = pickItem(G.items, wp, Math.max(tol, 4));
@@ -212,6 +253,15 @@ export function initInput(G) {
 
   window.addEventListener("pointermove", (e) => {
     lastPointer = e;
+    if (G.rotDrag) {
+      const r = G.rotDrag;
+      const wp = worldPoint(e);
+      const step = e.shiftKey ? FINE_STEP : ROT_STEP;
+      const a = Math.atan2(wp.x - r.item.x, -(wp.y - r.item.y));
+      r.item.angle = Math.round(a / step) * step;
+      r.valid = placementValid(r.item, G.level, G.obstacles, G.items);
+      return;
+    }
     if (G.drag) {
       if (!G.drag.isNew && !G.drag.moved) {
         const wp = worldPoint(e);
@@ -245,6 +295,16 @@ export function initInput(G) {
       pan = null;
       canvas.classList.remove("panning");
     }
+    if (G.rotDrag) {
+      const r = G.rotDrag;
+      G.rotDrag = null;
+      if (!r.valid) {
+        r.item.angle = r.orig;
+        G.flashInvalid(r.item);
+      }
+      G.changed();
+      return;
+    }
     const d = G.drag;
     if (!d) return;
     G.drag = null;
@@ -264,6 +324,10 @@ export function initInput(G) {
 
   window.addEventListener("pointercancel", () => {
     pan = null;
+    if (G.rotDrag) {
+      G.rotDrag.item.angle = G.rotDrag.orig;
+      G.rotDrag = null;
+    }
     if (G.drag) {
       const d = G.drag;
       G.drag = null;
@@ -294,29 +358,39 @@ export function initInput(G) {
     { passive: false }
   );
 
-  function rotate(item, dir, dragging) {
-    if (!item || !isRotatable(typeDef(item.type))) return;
-    const old = item.angle;
-    item.angle = Math.round((item.angle + dir * ROT_STEP) / ROT_STEP) * ROT_STEP;
+  // Apply a pose change; while dragging the drop decides validity, otherwise
+  // an invalid result is undone and flashed.
+  function changePose(item, dragging, apply) {
+    const old = { angle: item.angle, flip: item.flip };
+    apply();
     item.angle = Math.atan2(Math.sin(item.angle), Math.cos(item.angle));
     if (dragging) revalidateDrag();
     else if (!placementValid(item, G.level, G.obstacles, G.items)) {
-      item.angle = old;
+      Object.assign(item, old);
       G.flashInvalid(item);
     }
     G.changed();
   }
 
-  function flip(item, dragging) {
-    if (!item || !typeDef(item.type).flippable) return;
-    item.flip = -(item.flip || 1);
-    if (dragging) revalidateDrag();
-    else if (!placementValid(item, G.level, G.obstacles, G.items)) {
-      item.flip = -item.flip;
-      G.flashInvalid(item);
-    }
-    G.changed();
+  function rotate(item, dir, dragging) {
+    if (!item || !isRotatable(typeDef(item.type))) return;
+    changePose(item, dragging, () => {
+      item.angle = Math.round((item.angle + dir * ROT_STEP) / ROT_STEP) * ROT_STEP;
+    });
   }
+
+  // Mirror left-right (vertical = false) or upside down (vertical = true).
+  function flip(item, dragging, vertical = false) {
+    const def = item && typeDef(item.type);
+    if (!def || !isFlippable(def) || (vertical && !isRotatable(def))) return;
+    changePose(item, dragging, () => {
+      item.flip = -(item.flip || 1);
+      if (vertical) item.angle += Math.PI;
+    });
+  }
+
+  G.rotateItem = (item, dir) => rotate(item, dir, G.drag && G.drag.item === item);
+  G.flipItem = (item, vertical) => flip(item, G.drag && G.drag.item === item, vertical);
 
   window.addEventListener("keydown", (e) => {
     if (G.screen !== "game" || G.ui.modalOpen()) return;
@@ -332,6 +406,10 @@ export function initInput(G) {
       return;
     }
     if (k === "escape") {
+      if (G.rotDrag) {
+        G.rotDrag.item.angle = G.rotDrag.orig;
+        G.rotDrag = null;
+      }
       if (G.drag) {
         const d = G.drag;
         G.drag = null;
@@ -347,7 +425,8 @@ export function initInput(G) {
     const target = G.drag ? G.drag.item : G.selected;
     if (k === "q") rotate(target, -1, !!G.drag);
     else if (k === "e") rotate(target, 1, !!G.drag);
-    else if (k === "f") flip(target, !!G.drag);
+    else if (k === "f") flip(target, !!G.drag, e.shiftKey);
+    else if (k === "v") flip(target, !!G.drag, true);
     else if ((k === "delete" || k === "backspace") && target) {
       e.preventDefault();
       if (typeDef(target.type).category === "inventory") {

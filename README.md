@@ -13,7 +13,9 @@ each level's verified solution (dev aid).
 
 ## Controls
 
-Drag items from the bottom panel · Q/E or wheel while dragging: rotate 15° · F: flip ·
+Drag items from the bottom panel · click an item for its toolbar (rotate, mirror ↔ / ↕, remove) ·
+drag the round handle above a selected item to rotate (Shift: 1° steps) · right-click: rotate 15° ·
+Q/E or wheel while dragging: rotate 15° · F: mirror left–right · V or Shift+F: mirror upside down ·
 Delete or drag to panel: return · Space: Go/Reset · R: reset · drag background / arrows / WASD: pan ·
 wheel: zoom. Beam and track ends snap together when dropped close to each other.
 

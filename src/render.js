@@ -1,6 +1,7 @@
 // Canvas drawing of rooms, items, ball, switch, overlays and the minimap.
 import { typeDef, BALL_RADIUS } from "./items.js";
 import { itemParts } from "./physics.js";
+import { bounds, boundsOverlap } from "./geometry.js";
 
 // ---- camera ----------------------------------------------------------------
 
@@ -133,26 +134,139 @@ function drawHand(ctx, x, y) {
   ctx.restore();
 }
 
+// ---- stars ---------------------------------------------------------------
+
+const STAR_COLORS = ["#ffc21a", "#9b6bff", "#ff6fb5", "#ffffff", "#ffa53a", "#7cc8ff"];
+
+function starPath(ctx, x, y, r, rot) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = rot + (i * Math.PI) / 5 - Math.PI / 2;
+    const rr = i % 2 ? r * 0.45 : r;
+    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  ctx.closePath();
+}
+
+// Small deterministic PRNG so every room keeps the same star pattern.
+function rng(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function inRect(x, y, r, pad) {
+  return r && x > r.x - pad && x < r.x + r.w + pad && y > r.y - pad && y < r.y + r.h + pad;
+}
+
+const starCache = new WeakMap();
+
+// Wall stickers in the upper part of a room, clear of the window and picture.
+function roomStars(room) {
+  let stars = starCache.get(room);
+  if (stars) return stars;
+  stars = [];
+  const rand = rng(room.x * 7919 + room.y * 104729 + room.w);
+  const n = Math.round((room.w * room.h) / 42000);
+  for (let tries = 0; stars.length < n && tries < n * 20; tries++) {
+    const r = 7 + rand() * 11;
+    const x = room.x + 20 + rand() * (room.w - 40);
+    const y = room.y + 24 + rand() * (room.h * 0.62);
+    if (inRect(x, y, room.window, 30) || inRect(x, y, room.picture, 30)) continue;
+    if (Math.abs(x - (room.x + room.w / 2)) < 60 && y < room.y + 110) continue; // lamp
+    if (stars.some((o) => Math.hypot(o.x - x, o.y - y) < o.r + r + 26)) continue;
+    stars.push({ x, y, r, rot: rand() * Math.PI, color: STAR_COLORS[Math.floor(rand() * STAR_COLORS.length)] });
+  }
+  starCache.set(room, stars);
+  return stars;
+}
+
+function drawStars(ctx, room) {
+  ctx.lineJoin = "round";
+  for (const st of roomStars(room)) {
+    starPath(ctx, st.x, st.y, st.r, st.rot);
+    ctx.fillStyle = st.color;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(90,40,160,0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+// Glow-in-the-dark: drawn over the darkness overlay, fading as the lights
+// come on. Stars hidden behind furniture or items (blockers: bounds) don't glow.
+function drawStarGlow(ctx, room, k, blockers) {
+  ctx.save();
+  ctx.globalAlpha = 0.7 * k;
+  ctx.shadowColor = "rgba(200,255,180,0.9)";
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = "rgba(225,255,200,0.7)";
+  for (const st of roomStars(room)) {
+    const sb = { minX: st.x - st.r, minY: st.y - st.r, maxX: st.x + st.r, maxY: st.y + st.r };
+    if (blockers.some((b) => boundsOverlap(sb, b))) continue;
+    starPath(ctx, st.x, st.y, st.r, st.rot);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 // ---- rooms ---------------------------------------------------------------
 
 function drawRoom(ctx, room) {
   ctx.fillStyle = room.wallpaper;
   ctx.fillRect(room.x, room.y, room.w, room.h);
+  // sunny wash from the ceiling down
+  const wash = ctx.createLinearGradient(0, room.y, 0, room.y + room.h);
+  wash.addColorStop(0, "rgba(255,255,255,0.35)");
+  wash.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = wash;
+  ctx.fillRect(room.x, room.y, room.w, room.h);
   ctx.fillStyle = room.stripe;
   for (let x = room.x + 20; x < room.x + room.w; x += 60) ctx.fillRect(x, room.y, 18, room.h);
   // skirting board
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(room.x, room.y + room.h - 14, room.w, 14);
-  // window
+  ctx.fillStyle = "#e6d6ff";
+  ctx.fillRect(room.x, room.y + room.h - 14, room.w, 3);
+  // window: a sunny day outside
   if (room.window) {
     const wdw = room.window;
-    ctx.fillStyle = "#1b2a4a";
+    const sky = ctx.createLinearGradient(0, wdw.y, 0, wdw.y + wdw.h);
+    sky.addColorStop(0, "#5fb8ff");
+    sky.addColorStop(1, "#c8ecff");
+    ctx.fillStyle = sky;
     ctx.fillRect(wdw.x, wdw.y, wdw.w, wdw.h);
-    ctx.fillStyle = "#f6f0d8";
+    const sx = wdw.x + wdw.w * 0.72;
+    const sy = wdw.y + wdw.h * 0.3;
+    ctx.save();
     ctx.beginPath();
-    ctx.arc(wdw.x + wdw.w * 0.7, wdw.y + wdw.h * 0.3, 10, 0, Math.PI * 2);
+    ctx.rect(wdw.x, wdw.y, wdw.w, wdw.h);
+    ctx.clip();
+    ctx.strokeStyle = "#ffe066";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      ctx.beginPath();
+      ctx.moveTo(sx + Math.cos(a) * 26, sy + Math.sin(a) * 26);
+      ctx.lineTo(sx + Math.cos(a) * 36, sy + Math.sin(a) * 36);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#ffd23f";
+    ctx.beginPath();
+    ctx.arc(sx, sy, 19, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#f2efe6";
+    ctx.fillStyle = "#ffffff";
+    for (const [cx, cy, r] of [[0.22, 0.62, 16], [0.34, 0.58, 20], [0.46, 0.64, 14]]) {
+      ctx.beginPath();
+      ctx.arc(wdw.x + wdw.w * cx, wdw.y + wdw.h * cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 8;
     ctx.strokeRect(wdw.x, wdw.y, wdw.w, wdw.h);
     ctx.lineWidth = 4;
@@ -165,11 +279,15 @@ function drawRoom(ctx, room) {
   }
   if (room.picture) {
     const p = room.picture;
-    ctx.fillStyle = "#6b4a2b";
-    ctx.fillRect(p.x - 4, p.y - 4, p.w + 8, p.h + 8);
-    ctx.fillStyle = "#9fc5a8";
+    ctx.fillStyle = "#ffb000";
+    ctx.fillRect(p.x - 6, p.y - 6, p.w + 12, p.h + 12);
+    ctx.fillStyle = "#ffe9a8";
     ctx.fillRect(p.x, p.y, p.w, p.h);
-    ctx.fillStyle = "#5e8c6a";
+    ctx.fillStyle = "#ff8a3d";
+    ctx.beginPath();
+    ctx.arc(p.x + p.w * 0.75, p.y + p.h * 0.3, Math.min(p.w, p.h) * 0.13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#9b6bff";
     ctx.beginPath();
     ctx.moveTo(p.x, p.y + p.h);
     ctx.lineTo(p.x + p.w * 0.4, p.y + p.h * 0.35);
@@ -178,12 +296,13 @@ function drawRoom(ctx, room) {
     ctx.lineTo(p.x + p.w, p.y + p.h);
     ctx.fill();
   }
+  drawStars(ctx, room);
 }
 
 function drawLamp(ctx, room, light) {
   const x = room.x + room.w / 2;
   const y = room.y;
-  ctx.strokeStyle = "#444";
+  ctx.strokeStyle = "#5b34c9";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x, y);
@@ -191,16 +310,16 @@ function drawLamp(ctx, room, light) {
   ctx.stroke();
   if (light > 0) {
     const g = ctx.createRadialGradient(x, y + 50, 5, x, y + 50, 380);
-    g.addColorStop(0, `rgba(255,236,170,${0.35 * light})`);
-    g.addColorStop(1, "rgba(255,236,170,0)");
+    g.addColorStop(0, `rgba(255,226,120,${0.45 * light})`);
+    g.addColorStop(1, "rgba(255,226,120,0)");
     ctx.fillStyle = g;
     ctx.fillRect(room.x, room.y, room.w, room.h);
   }
-  ctx.fillStyle = light > 0.5 ? "#fff3b0" : "#cfcabb";
+  ctx.fillStyle = light > 0.5 ? "#fff3b0" : "#e8e0f5";
   ctx.beginPath();
   ctx.arc(x, y + 50, 9, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#3e6f8e";
+  ctx.fillStyle = "#8f5bff";
   ctx.beginPath();
   ctx.moveTo(x - 30, y + 52);
   ctx.lineTo(x + 30, y + 52);
@@ -214,11 +333,11 @@ function drawWall(ctx, it) {
   const x = it.x - it.w / 2;
   const y = it.y - it.h / 2;
   if (it.floor) {
-    ctx.fillStyle = "#8a5a35";
+    ctx.fillStyle = "#e09a4f";
     ctx.fillRect(x, y, it.w, it.h);
-    ctx.fillStyle = "#a06c42";
+    ctx.fillStyle = "#f7bd6b";
     ctx.fillRect(x, y, it.w, Math.min(10, it.h));
-    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.strokeStyle = "rgba(140,70,20,0.35)";
     ctx.lineWidth = 1;
     for (let px = x + 70; px < x + it.w; px += 140) {
       ctx.beginPath();
@@ -227,15 +346,35 @@ function drawWall(ctx, it) {
       ctx.stroke();
     }
     if (it.h > 14) {
-      ctx.fillStyle = "#5d5048";
+      ctx.fillStyle = WALL_COLOR;
       ctx.fillRect(x, y + 10, it.w, it.h - 10);
+      wallStars(ctx, x, y + 10, it.w, it.h - 10);
     }
   } else {
-    ctx.fillStyle = "#5d5048";
+    ctx.fillStyle = WALL_COLOR;
     ctx.fillRect(x, y, it.w, it.h);
-    ctx.strokeStyle = "rgba(255,255,255,0.06)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, it.w - 1, it.h - 1);
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 1, y + 1, it.w - 2, it.h - 2);
+    wallStars(ctx, x, y, it.w, it.h);
+  }
+}
+
+const WALL_COLOR = "#6a3fd6";
+
+// A row of tiny gold stars along a wall's long axis.
+function wallStars(ctx, x, y, w, h) {
+  const t = Math.min(w, h);
+  if (t < 16) return;
+  const r = Math.min(7, t * 0.24);
+  const along = w >= h;
+  const len = along ? w : h;
+  ctx.fillStyle = "rgba(255,210,63,0.85)";
+  for (let d = 40; d < len - 20; d += 90) {
+    const sx = along ? x + d : x + w / 2;
+    const sy = along ? y + h / 2 : y + d;
+    starPath(ctx, sx, sy, r, 0);
+    ctx.fill();
   }
 }
 
@@ -248,7 +387,7 @@ function drawWall(ctx, it) {
 export function drawWorld(ctx, scene) {
   const { level, fixed, items, sim } = scene;
   const light = scene.light || 0;
-  ctx.fillStyle = "#2d2723";
+  ctx.fillStyle = "#4a2aa8";
   ctx.fillRect(0, 0, level.size.w, level.size.h);
   for (const room of level.rooms) drawRoom(ctx, room);
   for (const it of fixed) if (it.type === "wall") drawWall(ctx, it);
@@ -268,7 +407,7 @@ export function drawWorld(ctx, scene) {
 
   if (sim) {
     if (scene.trail) {
-      ctx.fillStyle = "rgba(255,120,90,0.25)";
+      ctx.fillStyle = "rgba(255,90,170,0.3)";
       for (const p of sim.trail) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
@@ -282,10 +421,23 @@ export function drawWorld(ctx, scene) {
   }
 
   // darkness overlay (lights off)
-  const dark = 0.58 * (1 - light);
+  const dark = 0.34 * (1 - light);
   if (dark > 0.001) {
-    ctx.fillStyle = `rgba(8,10,32,${dark})`;
+    ctx.fillStyle = `rgba(48,16,120,${dark})`;
     ctx.fillRect(0, 0, level.size.w, level.size.h);
+    const blockers = [];
+    for (const it of [...fixed, ...items]) {
+      if (it.type === "wall" || it.hidden) continue;
+      for (const p of itemParts(it)) {
+        const b = bounds(p.poly);
+        // fixed furniture draws decor (desk lamp, plant) above its parts
+        const top = it.category ? 16 : 70;
+        blockers.push({ minX: b.minX - 6, minY: b.minY - top, maxX: b.maxX + 6, maxY: b.maxY + 6 });
+      }
+    }
+    const bp = sim ? sim.ball.position : level.spawn;
+    blockers.push({ minX: bp.x - 30, minY: bp.y - 100, maxX: bp.x + 30, maxY: bp.y + 30 });
+    for (const room of level.rooms) drawStarGlow(ctx, room, 1 - light, blockers);
     // the switch stays faintly visible so the goal is clear
     drawSwitchHalo(ctx, level, 1 - light);
   }

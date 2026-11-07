@@ -66,8 +66,8 @@ function hashColor(id, palette) {
   return palette[Math.abs(h) % palette.length];
 }
 
-const BOOK_COLORS = ["#b23a48", "#2d6a8f", "#3f7d3a", "#c98a1b", "#6b4a8e", "#8a5a2b"];
-const LEGO_COLORS = { legoLong: "#d62828", legoShort: "#f2b705" };
+const BOOK_COLORS = ["#ff4f7b", "#2fa8ff", "#2ec27e", "#ffb000", "#8f5bff", "#ff7a2f"];
+const LEGO_COLORS = { legoLong: "#ff3b4f", legoShort: "#ffc21a" };
 
 // ---- type geometry ---------------------------------------------------------
 
@@ -100,7 +100,7 @@ function drawLego(w, color) {
 
 const TRACK_W = 240;
 function drawRail(ctx, x1, x2) {
-  ctx.fillStyle = "#7a5230";
+  ctx.fillStyle = "#c27a3a";
   for (let x = x1 + 10; x < x2 - 4; x += 22) ctx.fillRect(x - 5, 3, 10, 9);
   fillRR(ctx, x1, -4, x2 - x1, 8, 2, "#a9b1b9", "#5b636b");
   ctx.fillStyle = "rgba(255,255,255,0.5)";
@@ -143,9 +143,9 @@ function dollhouseParts() {
 
 function drawDollhouse(ctx, item) {
   // back wall / rooms
-  ctx.fillStyle = "#f6d9e6";
+  ctx.fillStyle = "#ffd6f0";
   ctx.fillRect(-110, -130, 220, 96);
-  ctx.fillStyle = "#d9ecf6";
+  ctx.fillStyle = "#d8ecff";
   ctx.fillRect(-110, -34, 220, 168);
   // tiny furniture decor
   ctx.fillStyle = "rgba(120,80,60,0.35)";
@@ -159,15 +159,15 @@ function drawDollhouse(ctx, item) {
   ctx.lineTo(0, -205);
   ctx.lineTo(140, -132);
   ctx.closePath();
-  ctx.fillStyle = "#c0392b";
+  ctx.fillStyle = "#9b5cff";
   ctx.fill();
-  ctx.fillStyle = "#e8b4c8";
+  ctx.fillStyle = "#ffd23f";
   ctx.beginPath();
   ctx.arc(0, -160, 14, 0, Math.PI * 2);
   ctx.fill();
   const parts = dollhouseParts().map((p) => p.v);
   fillPolys(ctx, parts.slice(2), "#f4f0e6", "#8a6d5a");
-  fillPolys(ctx, parts.slice(0, 2), "#a93226", "#6e1f18");
+  fillPolys(ctx, parts.slice(0, 2), "#7c3cf0", "#4b1fa0");
   // window frame hint + door frame
   ctx.strokeStyle = "#8a6d5a";
   ctx.lineWidth = 2;
@@ -177,9 +177,9 @@ function drawDollhouse(ctx, item) {
 
 // ---- furniture -------------------------------------------------------------
 
-function drawWoodBox(ctx, x, y, w, h, fill = "#9c6b3f") {
-  fillRR(ctx, x, y, w, h, 3, fill, "rgba(0,0,0,0.35)");
-  ctx.fillStyle = "rgba(255,255,255,0.12)";
+function drawWoodBox(ctx, x, y, w, h, fill = "#d0904f") {
+  fillRR(ctx, x, y, w, h, 3, fill, "rgba(70,30,20,0.35)");
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
   ctx.fillRect(x + 2, y + 2, w - 4, Math.min(4, h - 4));
 }
 
@@ -229,8 +229,8 @@ export const ITEM_TYPES = {
     material: "wood",
     parts: (it) => [P(rect(0, 0, it.w, 14))],
     draw(ctx, it) {
-      drawWoodBox(ctx, -it.w / 2, -7, it.w, 14, "#b07d4f");
-      ctx.fillStyle = "#6d4b2d";
+      drawWoodBox(ctx, -it.w / 2, -7, it.w, 14, "#e8a35a");
+      ctx.fillStyle = "#a8682f";
       ctx.fillRect(-it.w / 2 + 8, 7, 6, 18);
       ctx.fillRect(it.w / 2 - 14, 7, 6, 18);
     },
@@ -246,17 +246,17 @@ export const ITEM_TYPES = {
       P(box(176, -30, 190, 30)),
     ],
     draw(ctx) {
-      drawWoodBox(ctx, -170, 30, 360, 32, "#8b5a33");
-      ctx.fillStyle = "#6d4426";
+      drawWoodBox(ctx, -170, 30, 360, 32, "#c98a4c");
+      ctx.fillStyle = "#9a6232";
       ctx.fillRect(-170, 62, 14, 18);
       ctx.fillRect(176, 62, 14, 18);
       fillRR(ctx, -170, -12, 356, 42, 10, "#f1efe9", "rgba(0,0,0,0.25)");
-      fillRR(ctx, -60, -16, 246, 46, 10, "#5f8fc9", "rgba(0,0,0,0.25)");
+      fillRR(ctx, -60, -16, 246, 46, 10, "#8f5bff", "rgba(60,20,120,0.35)");
       ctx.fillStyle = "rgba(255,255,255,0.25)";
       for (let x = -40; x < 180; x += 40) ctx.fillRect(x, -12, 14, 40);
       fillRR(ctx, -160, -34, 80, 24, 10, "#ffffff", "rgba(0,0,0,0.2)");
-      drawWoodBox(ctx, -190, -80, 20, 160, "#8b5a33");
-      drawWoodBox(ctx, 176, -30, 14, 60, "#8b5a33");
+      drawWoodBox(ctx, -190, -80, 20, 160, "#c98a4c");
+      drawWoodBox(ctx, 176, -30, 14, 60, "#c98a4c");
     },
   },
   desk: {
@@ -270,16 +270,16 @@ export const ITEM_TYPES = {
       P(box(30, -67, 130, -27)),
     ],
     draw(ctx) {
-      drawWoodBox(ctx, -142, -67, 12, 152, "#7a5a3a");
-      drawWoodBox(ctx, 130, -67, 12, 152, "#7a5a3a");
-      drawWoodBox(ctx, 30, -67, 100, 40, "#a37b52");
-      ctx.fillStyle = "#3a2a1a";
+      drawWoodBox(ctx, -142, -67, 12, 152, "#b77a45");
+      drawWoodBox(ctx, 130, -67, 12, 152, "#b77a45");
+      drawWoodBox(ctx, 30, -67, 100, 40, "#e2a764");
+      ctx.fillStyle = "#6b3f1c";
       ctx.fillRect(72, -50, 16, 4);
-      drawWoodBox(ctx, -150, -85, 300, 18, "#b88a5c");
+      drawWoodBox(ctx, -150, -85, 300, 18, "#f0b46e");
       // lamp & books decor
-      ctx.fillStyle = "#444";
+      ctx.fillStyle = "#6a3fc9";
       ctx.fillRect(-110, -95, 30, 10);
-      ctx.fillStyle = "#d9a441";
+      ctx.fillStyle = "#ffc21a";
       ctx.fillRect(-100, -130, 6, 36);
       ctx.beginPath();
       ctx.moveTo(-122, -128);
@@ -296,12 +296,12 @@ export const ITEM_TYPES = {
     material: "soft",
     parts: () => [P(box(-180, -10, 180, 60)), P(box(-180, -70, -150, -10)), P(box(150, -70, 180, -10)), P(box(-150, -90, 150, -40))],
     draw(ctx) {
-      fillRR(ctx, -150, -90, 300, 60, 16, "#5b7c6b", "rgba(0,0,0,0.3)");
-      fillRR(ctx, -180, -10, 360, 70, 12, "#4f6e5e", "rgba(0,0,0,0.3)");
-      fillRR(ctx, -150, -40, 150, 34, 10, "#6a8e7a", "rgba(0,0,0,0.25)");
-      fillRR(ctx, 0, -40, 150, 34, 10, "#6a8e7a", "rgba(0,0,0,0.25)");
-      fillRR(ctx, -184, -70, 34, 130, 12, "#466152", "rgba(0,0,0,0.3)");
-      fillRR(ctx, 150, -70, 34, 130, 12, "#466152", "rgba(0,0,0,0.3)");
+      fillRR(ctx, -150, -90, 300, 60, 16, "#9b6bff", "rgba(60,20,120,0.35)");
+      fillRR(ctx, -180, -10, 360, 70, 12, "#7f4fe8", "rgba(60,20,120,0.35)");
+      fillRR(ctx, -150, -40, 150, 34, 10, "#b48cff", "rgba(60,20,120,0.3)");
+      fillRR(ctx, 0, -40, 150, 34, 10, "#b48cff", "rgba(60,20,120,0.3)");
+      fillRR(ctx, -184, -70, 34, 130, 12, "#6b3fd6", "rgba(60,20,120,0.35)");
+      fillRR(ctx, 150, -70, 34, 130, 12, "#6b3fd6", "rgba(60,20,120,0.35)");
       ctx.fillStyle = "#2e2e2e";
       ctx.fillRect(-170, 60, 10, 10);
       ctx.fillRect(160, 60, 10, 10);
@@ -314,7 +314,7 @@ export const ITEM_TYPES = {
     parts: (it) => [P(box(-it.w / 2, -90, it.w / 2, 90))],
     draw(ctx, it) {
       const w = it.w;
-      drawWoodBox(ctx, -w / 2 + 6, -76, w - 12, 166, "#e9e2d4");
+      drawWoodBox(ctx, -w / 2 + 6, -76, w - 12, 166, "#fff4d6");
       ctx.strokeStyle = "rgba(0,0,0,0.25)";
       ctx.lineWidth = 2;
       const doors = Math.max(1, Math.round(w / 100));
@@ -324,7 +324,7 @@ export const ITEM_TYPES = {
         ctx.fillStyle = "#888";
         ctx.fillRect(x + (w - 24) / doors - 22, -50, 4, 18);
       }
-      fillRR(ctx, -w / 2, -90, w, 16, 3, "#5d5d66", "rgba(0,0,0,0.4)");
+      fillRR(ctx, -w / 2, -90, w, 16, 3, "#6a4bc4", "rgba(40,10,90,0.45)");
     },
   },
   table: {
@@ -333,12 +333,12 @@ export const ITEM_TYPES = {
     material: "wood",
     parts: () => [P(box(-130, -75, 130, -59)), P(box(-118, -59, -106, 75)), P(box(106, -59, 118, 75))],
     draw(ctx) {
-      drawWoodBox(ctx, -118, -59, 12, 134, "#6e4f33");
-      drawWoodBox(ctx, 106, -59, 12, 134, "#6e4f33");
-      drawWoodBox(ctx, -130, -75, 260, 16, "#a8774a");
+      drawWoodBox(ctx, -118, -59, 12, 134, "#b77a45");
+      drawWoodBox(ctx, 106, -59, 12, 134, "#b77a45");
+      drawWoodBox(ctx, -130, -75, 260, 16, "#eaa65e");
       ctx.fillStyle = "#e7e3da";
       ctx.fillRect(-30, -95, 24, 20);
-      ctx.fillStyle = "#7fb069";
+      ctx.fillStyle = "#3fd07a";
       ctx.beginPath();
       ctx.arc(-18, -100, 12, 0, Math.PI * 2);
       ctx.fill();
@@ -353,7 +353,7 @@ export const ITEM_TYPES = {
       const n = it.steps;
       const W = n * it.stepW;
       const H = n * it.stepH;
-      ctx.fillStyle = "#8a6440";
+      ctx.fillStyle = "#c98a4c";
       ctx.beginPath();
       ctx.moveTo(-W / 2, H / 2);
       for (let i = 0; i < n; i++) {
@@ -365,7 +365,7 @@ export const ITEM_TYPES = {
       ctx.lineTo(W / 2, H / 2);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = "#b8895a";
+      ctx.fillStyle = "#f2b56a";
       for (let i = 0; i < n; i++) {
         ctx.fillRect(-W / 2 + i * it.stepW, -H / 2 + i * it.stepH, it.stepW + 2, 6);
       }
@@ -378,7 +378,7 @@ export const ITEM_TYPES = {
     decor: true,
     parts: () => [],
     draw(ctx, it) {
-      ctx.strokeStyle = "#e8e0d0";
+      ctx.strokeStyle = "#fffaf0";
       ctx.lineWidth = 8;
       ctx.beginPath();
       ctx.moveTo(-it.w / 2, it.h / 2);
@@ -394,15 +394,14 @@ export const ITEM_TYPES = {
     name: "Chair",
     category: "moveable",
     material: "wood",
-    flippable: true,
     parts: chairParts,
     draw(ctx) {
-      drawWoodBox(ctx, -52, 8, 10, 92, "#7c5534");
-      drawWoodBox(ctx, 42, 8, 10, 92, "#7c5534");
-      drawWoodBox(ctx, 42, -100, 12, 94, "#9a6b42");
-      ctx.fillStyle = "#9a6b42";
+      drawWoodBox(ctx, -52, 8, 10, 92, "#b77a45");
+      drawWoodBox(ctx, 42, 8, 10, 92, "#b77a45");
+      drawWoodBox(ctx, 42, -100, 12, 94, "#d8954f");
+      ctx.fillStyle = "#d8954f";
       ctx.fillRect(46, -90, 4, 80);
-      drawWoodBox(ctx, -55, -6, 110, 14, "#b07b4b");
+      drawWoodBox(ctx, -55, -6, 110, 14, "#f0ad62");
     },
   },
   stool: {
@@ -411,11 +410,11 @@ export const ITEM_TYPES = {
     material: "wood",
     parts: stoolParts,
     draw(ctx) {
-      drawWoodBox(ctx, -36, -41, 8, 96, "#6f4e30");
-      drawWoodBox(ctx, 28, -41, 8, 96, "#6f4e30");
-      ctx.fillStyle = "#6f4e30";
+      drawWoodBox(ctx, -36, -41, 8, 96, "#b77a45");
+      drawWoodBox(ctx, 28, -41, 8, 96, "#b77a45");
+      ctx.fillStyle = "#b77a45";
       ctx.fillRect(-30, 20, 60, 5);
-      fillRR(ctx, -40, -55, 80, 14, 6, "#c0392b", "rgba(0,0,0,0.35)");
+      fillRR(ctx, -40, -55, 80, 14, 6, "#ff4fa3", "rgba(120,20,70,0.4)");
     },
   },
   basket: {
@@ -424,7 +423,7 @@ export const ITEM_TYPES = {
     material: "plastic",
     parts: basketParts,
     draw(ctx) {
-      ctx.fillStyle = "rgba(90,160,200,0.25)";
+      ctx.fillStyle = "rgba(60,200,220,0.22)";
       ctx.beginPath();
       ctx.moveTo(-60, -48);
       ctx.lineTo(60, -48);
@@ -432,8 +431,8 @@ export const ITEM_TYPES = {
       ctx.lineTo(-56, 50);
       ctx.closePath();
       ctx.fill();
-      fillPolys(ctx, basketParts().map((p) => p.v), "#4a9fd0", "#2c6f96");
-      ctx.strokeStyle = "rgba(44,111,150,0.6)";
+      fillPolys(ctx, basketParts().map((p) => p.v), "#2ec4e6", "#1a8aa8");
+      ctx.strokeStyle = "rgba(26,138,168,0.6)";
       ctx.lineWidth = 2;
       for (let y = -30; y < 40; y += 16) {
         ctx.beginPath();
@@ -441,7 +440,7 @@ export const ITEM_TYPES = {
         ctx.lineTo(58, y);
         ctx.stroke();
       }
-      fillRR(ctx, -66, -54, 132, 8, 4, "#3b8dc0");
+      fillRR(ctx, -66, -54, 132, 8, 4, "#22a9cc");
     },
   },
   box: {
@@ -450,8 +449,8 @@ export const ITEM_TYPES = {
     material: "wood",
     parts: () => [P(rect(0, 0, 120, 100))],
     draw(ctx) {
-      fillRR(ctx, -60, -50, 120, 100, 3, "#c89b62", "#8d6a3d");
-      ctx.fillStyle = "#d9b27a";
+      fillRR(ctx, -60, -50, 120, 100, 3, "#e8b36f", "#a8763c");
+      ctx.fillStyle = "#f5cb8a";
       ctx.fillRect(-12, -50, 24, 100);
       ctx.strokeStyle = "rgba(0,0,0,0.25)";
       ctx.beginPath();
@@ -489,7 +488,7 @@ export const ITEM_TYPES = {
     ends: topEnds(100, 12),
     draw(ctx, it) {
       const c = hashColor(it.id ?? 0, BOOK_COLORS);
-      fillRR(ctx, -50, -12, 100, 24, 3, "#f3ead6", "rgba(0,0,0,0.3)");
+      fillRR(ctx, -50, -12, 100, 24, 3, "#fffaf0", "rgba(0,0,0,0.3)");
       ctx.fillStyle = "rgba(0,0,0,0.12)";
       for (let y = -6; y <= 6; y += 4) ctx.fillRect(-46, y, 92, 1);
       fillRR(ctx, -50, -12, 100, 6, 2, c);
@@ -509,8 +508,8 @@ export const ITEM_TYPES = {
       { x: 65, y: 12 }, { x: 55, y: 20 }, { x: -55, y: 20 }, { x: -65, y: 12 },
     ])],
     draw(ctx) {
-      fillRR(ctx, -65, -20, 130, 40, 16, "#e9d5f2", "#a888b8");
-      ctx.strokeStyle = "rgba(168,136,184,0.6)";
+      fillRR(ctx, -65, -20, 130, 40, 16, "#e6d2ff", "#9b6bff");
+      ctx.strokeStyle = "rgba(155,107,255,0.6)";
       ctx.setLineDash([4, 4]);
       rr(ctx, -58, -14, 116, 28, 12);
       ctx.stroke();
@@ -526,10 +525,10 @@ export const ITEM_TYPES = {
     rotatable: false,
     parts: () => [P(rect(0, 0, 200, 6))],
     draw(ctx) {
-      fillRR(ctx, -100, -3, 200, 6, 2, "#a23e48");
-      ctx.fillStyle = "#e8c07d";
+      fillRR(ctx, -100, -3, 200, 6, 2, "#e8408a");
+      ctx.fillStyle = "#ffd23f";
       for (let x = -92; x < 96; x += 16) ctx.fillRect(x, -2, 8, 2);
-      ctx.strokeStyle = "#e8c07d";
+      ctx.strokeStyle = "#ffd23f";
       ctx.lineWidth = 1;
       for (const s of [-1, 1]) {
         for (let y = -2; y <= 2; y += 2) {
@@ -546,10 +545,9 @@ export const ITEM_TYPES = {
     category: "inventory",
     group: "Toys",
     material: "wood",
-    flippable: true,
     parts: () => [P(rect(0, 0, DOMINO_W, DOMINO_H))],
     draw(ctx) {
-      fillRR(ctx, -DOMINO_W / 2, -DOMINO_H / 2, DOMINO_W, DOMINO_H, 3, "#1d1d1f", "#000");
+      fillRR(ctx, -DOMINO_W / 2, -DOMINO_H / 2, DOMINO_W, DOMINO_H, 3, "#4b2a9e", "#2a1466");
       ctx.fillStyle = "#fff";
       ctx.fillRect(-5, -1, 10, 2);
       for (const y of [-20, -10, 10, 20]) {
@@ -577,7 +575,6 @@ export const ITEM_TYPES = {
     category: "inventory",
     group: "Train",
     material: "track",
-    flippable: true,
     parts: curveParts,
     ends: [
       { x: CURVE_C.x + Math.cos(CURVE_A0) * CURVE_R, y: CURVE_C.y + Math.sin(CURVE_A0) * CURVE_R },
@@ -586,7 +583,7 @@ export const ITEM_TYPES = {
     draw(ctx) {
       const { x: cx, y: cy } = CURVE_C;
       // sleepers on the outer side
-      ctx.strokeStyle = "#7a5230";
+      ctx.strokeStyle = "#c27a3a";
       ctx.lineWidth = 9;
       for (let i = 0; i <= 8; i++) {
         const a = CURVE_A0 + ((CURVE_A1 - CURVE_A0) * (i + 0.5)) / 9.5;
@@ -610,7 +607,6 @@ export const ITEM_TYPES = {
     category: "inventory",
     group: "Train",
     material: "metal",
-    flippable: true,
     parts: () => [
       P(box(-75, 4, 75, 22)),
       P(box(-75, -22, -65, 4)),
@@ -630,10 +626,10 @@ export const ITEM_TYPES = {
         ctx.fill();
         ctx.fillStyle = "#2b2b2b";
       }
-      fillRR(ctx, -75, 4, 150, 18, 3, "#2f7d4f", "#1d4f32");
-      fillRR(ctx, -75, -22, 10, 28, 2, "#3a9a62", "#1d4f32");
-      fillRR(ctx, 65, -22, 10, 28, 2, "#3a9a62", "#1d4f32");
-      ctx.fillStyle = "#f2c94c";
+      fillRR(ctx, -75, 4, 150, 18, 3, "#2ec27e", "#17804f");
+      fillRR(ctx, -75, -22, 10, 28, 2, "#4fe09a", "#17804f");
+      fillRR(ctx, 65, -22, 10, 28, 2, "#4fe09a", "#17804f");
+      ctx.fillStyle = "#ffd23f";
       ctx.fillRect(-60, 10, 120, 3);
       ctx.fillStyle = "#555";
       ctx.fillRect(-85, 10, 10, 5);
@@ -652,7 +648,7 @@ export const ITEM_TYPES = {
     ends: topEnds(TUBE_L, -TUBE_IN / 2),
     draw(ctx) {
       const h = TUBE_IN + TUBE_T * 2;
-      ctx.fillStyle = "rgba(200,150,90,0.28)";
+      ctx.fillStyle = "rgba(240,170,90,0.3)";
       ctx.fillRect(-TUBE_L / 2, -h / 2, TUBE_L, h);
       ctx.strokeStyle = "rgba(140,100,55,0.35)";
       ctx.lineWidth = 2;
@@ -662,8 +658,8 @@ export const ITEM_TYPES = {
         ctx.lineTo(x + 18, h / 2);
         ctx.stroke();
       }
-      fillRR(ctx, -TUBE_L / 2, -h / 2, TUBE_L, TUBE_T, 2, "#c8955a", "#8c6437");
-      fillRR(ctx, -TUBE_L / 2, h / 2 - TUBE_T, TUBE_L, TUBE_T, 2, "#c8955a", "#8c6437");
+      fillRR(ctx, -TUBE_L / 2, -h / 2, TUBE_L, TUBE_T, 2, "#eaa65e", "#a8682f");
+      fillRR(ctx, -TUBE_L / 2, h / 2 - TUBE_T, TUBE_L, TUBE_T, 2, "#eaa65e", "#a8682f");
       ctx.fillStyle = "#8c6437";
       for (const s of [-1, 1]) {
         ctx.beginPath();
@@ -678,7 +674,6 @@ export const ITEM_TYPES = {
     category: "inventory",
     group: "Toys",
     material: "wood",
-    flippable: true,
     parts: dollhouseParts,
     draw: drawDollhouse,
   },
@@ -694,6 +689,12 @@ export function typeDef(type) {
 
 export function isRotatable(def) {
   return def.category !== "fixed" && def.rotatable !== false;
+}
+
+// Horizontal mirror. A vertical mirror is a horizontal one plus a half turn,
+// so it also needs the item to be rotatable.
+export function isFlippable(def) {
+  return def.category !== "fixed" && def.flippable !== false;
 }
 
 export function materialOf(def, part) {

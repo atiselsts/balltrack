@@ -2,7 +2,7 @@
 import level1 from "./levels/level1.js";
 import level2 from "./levels/level2.js";
 import level3 from "./levels/level3.js";
-import { typeDef } from "./items.js";
+import { typeDef, isRotatable } from "./items.js";
 import { createSim, stepSim, levelFixedItems } from "./physics.js";
 import {
   VIEW,
@@ -13,7 +13,7 @@ import {
   drawWorld,
   drawItemOutline,
 } from "./render.js";
-import { initInput, staticObstacles } from "./input.js";
+import { initInput, staticObstacles, rotateHandle } from "./input.js";
 import { initUI } from "./ui.js";
 
 const STORAGE_KEY = "balltrack.progress.v1";
@@ -53,6 +53,7 @@ const G = {
   sim: null,
   selected: null,
   drag: null,
+  rotDrag: null, // dragging the selected item's rotate handle
   followBall: false,
   buildCam: null, // camera to restore on Reset after following the ball
   light: 0,
@@ -167,6 +168,7 @@ function stopRun() {
 G.go = () => {
   if (G.phase !== "build") return;
   G.drag = null;
+  G.rotDrag = null;
   G.selected = null;
   G.ui.hideTooltip();
   G.sim = createSim(G.level, [...G.fixed, ...G.items]);
@@ -264,13 +266,13 @@ function drawMinimap() {
   ctx.save();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.globalAlpha = 0.9;
-  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillStyle = "rgba(59,36,119,0.75)";
   ctx.fillRect(m.x - 4, m.y - 4, m.w + 8, m.h + 8);
   ctx.drawImage(G.minimap, m.x, m.y, m.w, m.h);
   ctx.globalAlpha = 1;
   const vw = VIEW.w / G.cam.zoom;
   const vh = VIEW.h / G.cam.zoom;
-  ctx.strokeStyle = "#ffe27a";
+  ctx.strokeStyle = "#ffd23f";
   ctx.lineWidth = 2;
   ctx.strokeRect(m.x + G.cam.x * m.s, m.y + G.cam.y * m.s, vw * m.s, vh * m.s);
   const b = G.sim ? G.sim.ball.position : G.level.spawn;
@@ -333,7 +335,7 @@ function update(dt) {
 function render() {
   const dpr = G.dpr;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = "#14110f";
+  ctx.fillStyle = "#3b2477";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (G.screen !== "game") return;
   const k = G.cam.scale * G.cam.zoom * dpr;
@@ -349,10 +351,15 @@ function render() {
 
   if (G.phase === "build") {
     const d = G.drag;
-    if (G.selected && !G.selected.hidden && !(d && !d.valid && d.item === G.selected)) {
+    const r = G.rotDrag;
+    if (G.selected && !G.selected.hidden && !(d && !d.valid && d.item === G.selected) && !(r && !r.valid)) {
       ctx.setLineDash([6, 4]);
-      drawItemOutline(ctx, G.selected, "rgba(140,210,255,0.95)");
+      drawItemOutline(ctx, G.selected, "rgba(124,77,255,0.95)");
       ctx.setLineDash([]);
+    }
+    if (r && !r.valid) drawItemOutline(ctx, r.item, "#ff3b3b", "rgba(255,40,40,0.45)");
+    if (G.selected && !G.selected.hidden && !(d && (d.moved || d.isNew)) && isRotatable(typeDef(G.selected.type))) {
+      drawRotateHandle(G.selected);
     }
     if (d && d.snap && d.valid) {
       ctx.strokeStyle = "#7dffb0";
@@ -372,11 +379,64 @@ function render() {
   if (G.cam.zoom > fitZoom(G.level) + 1e-3) drawMinimap();
 }
 
+function drawRotateHandle(item) {
+  const h = rotateHandle(item, G.cam);
+  const px = 1 / (G.cam.zoom * G.cam.scale);
+  const active = !!G.rotDrag;
+  ctx.save();
+  ctx.strokeStyle = "rgba(124,77,255,0.9)";
+  ctx.lineWidth = 2 * px;
+  ctx.beginPath();
+  ctx.moveTo(h.base.x, h.base.y);
+  ctx.lineTo(h.x, h.y);
+  ctx.stroke();
+  ctx.fillStyle = active ? "#ffc21a" : "#ffffff";
+  ctx.lineWidth = 2.5 * px;
+  ctx.beginPath();
+  ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // circular arrow glyph
+  ctx.strokeStyle = "#5b2fd6";
+  ctx.lineWidth = 2 * px;
+  const gr = h.r * 0.52;
+  ctx.beginPath();
+  ctx.arc(h.x, h.y, gr, -Math.PI * 0.9, Math.PI * 0.55);
+  ctx.stroke();
+  const ea = Math.PI * 0.55;
+  const ex = h.x + Math.cos(ea) * gr;
+  const ey = h.y + Math.sin(ea) * gr;
+  ctx.fillStyle = "#5b2fd6";
+  ctx.beginPath();
+  ctx.moveTo(ex + 3.5 * px, ey - 1 * px);
+  ctx.lineTo(ex - 3 * px, ey - 3.5 * px);
+  ctx.lineTo(ex - 1 * px, ey + 3.5 * px);
+  ctx.closePath();
+  ctx.fill();
+  if (active) {
+    let deg = Math.round((item.angle * 180) / Math.PI);
+    if (deg > 180) deg -= 360;
+    ctx.font = `bold ${14 * px}px system-ui, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    const txt = `${deg}°`;
+    const tw = ctx.measureText(txt).width;
+    ctx.fillStyle = "rgba(59,36,119,0.9)";
+    ctx.beginPath();
+    ctx.roundRect(h.x + h.r + 6 * px, h.y - 11 * px, tw + 12 * px, 22 * px, 6 * px);
+    ctx.fill();
+    ctx.fillStyle = "#ffe066";
+    ctx.fillText(txt, h.x + h.r + 12 * px, h.y + 1 * px);
+  }
+  ctx.restore();
+}
+
 function frame(t) {
   const dt = Math.min(0.1, (t - lastT) / 1000);
   lastT = t;
   update(dt);
   render();
+  G.ui.syncItemBar();
   requestAnimationFrame(frame);
 }
 

@@ -6,7 +6,7 @@ export default {
   size: { w: 1600, h: 900 },
   spawn: { x: 185, y: 110 },
   switch: { x: 1556, y: 480 },
-  rooms: [{ x: 30, y: 30, w: 1540, h: 830, wallpaper: "#d8c6a8", stripe: "#cdb894", name: "Bedroom", window: { x: 560, y: 160, w: 240, h: 180 }, picture: { x: 1180, y: 250, w: 180, h: 120 } }],
+  rooms: [{ x: 30, y: 30, w: 1540, h: 830, wallpaper: "#ffe58a", stripe: "#ffdb6e", name: "Bedroom", window: { x: 560, y: 160, w: 240, h: 180 }, picture: { x: 1180, y: 250, w: 180, h: 120 } }],
   walls: [
     { x: 0, y: 0, w: 1600, h: 30 },
     { x: 0, y: 860, w: 1600, h: 40, floor: true },

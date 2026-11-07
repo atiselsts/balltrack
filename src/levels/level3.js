@@ -8,10 +8,10 @@ export default {
   spawn: { x: 150, y: 100 },
   switch: { x: 3356, y: 950 },
   rooms: [
-    { x: 30, y: 30, w: 770, h: 730, wallpaper: "#f0d7de", stripe: "#e8c9d2", name: "Kid's room", window: { x: 420, y: 140, w: 200, h: 160 } },
-    { x: 830, y: 30, w: 670, h: 730, wallpaper: "#d9e4ef", stripe: "#ccdae8", name: "Study", picture: { x: 1080, y: 200, w: 160, h: 110 } },
-    { x: 1500, y: 30, w: 1000, h: 1230, wallpaper: "#e9e1cf", stripe: "#e0d6c0", name: "Hall", window: { x: 1900, y: 160, w: 200, h: 260 } },
-    { x: 2530, y: 30, w: 840, h: 1230, wallpaper: "#d7e6cf", stripe: "#cadcc0", name: "Living room", picture: { x: 2800, y: 520, w: 220, h: 140 } },
+    { x: 30, y: 30, w: 770, h: 730, wallpaper: "#ffd1ec", stripe: "#ffc2e4", name: "Kid's room", window: { x: 420, y: 140, w: 200, h: 160 } },
+    { x: 830, y: 30, w: 670, h: 730, wallpaper: "#c9e8ff", stripe: "#b8e0ff", name: "Study", picture: { x: 1080, y: 200, w: 160, h: 110 } },
+    { x: 1500, y: 30, w: 1000, h: 1230, wallpaper: "#fff0a0", stripe: "#ffe985", name: "Hall", window: { x: 1900, y: 160, w: 200, h: 260 } },
+    { x: 2530, y: 30, w: 840, h: 1230, wallpaper: "#dccbff", stripe: "#cfb8ff", name: "Living room", picture: { x: 2800, y: 520, w: 220, h: 140 } },
   ],
   walls: [
     { x: 0, y: 0, w: 3400, h: 30 },

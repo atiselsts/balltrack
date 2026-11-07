@@ -7,88 +7,123 @@
 <link rel="icon" href="data:,">
 <style>
   :root {
-    --bg: #14110f;
-    --panel: #221d19;
-    --panel2: #2c2520;
-    --line: #3d342d;
-    --text: #f1e9df;
-    --muted: #a99c8f;
-    --accent: #ffcf5a;
-    --go: #4caf6a;
-    --reset: #d9773a;
+    --bg: #5b34c9;
+    --bg2: #8a5cff;
+    --panel: #fff7d9;
+    --panel2: #ffffff;
+    --line: #e9d3ff;
+    --text: #3a1f7a;
+    --muted: #8a73b8;
+    --accent: #7c4dff;
+    --sun: #ffc21a;
+    --go: #22c27a;
+    --reset: #ff7a3d;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  html, body { margin: 0; height: 100%; color: var(--text);
+    background: radial-gradient(circle at 20% 0%, #9d72ff, var(--bg) 60%, #3f1f9a);
     font: 14px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; }
   #app { display: flex; flex-direction: column; height: 100%; }
   .hidden { display: none !important; }
 
-  #topbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--panel);
-    border-bottom: 1px solid var(--line); flex: none; }
-  #level-name { font-weight: 700; font-size: 16px; margin-left: 6px; letter-spacing: .02em; }
+  #topbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; flex: none;
+    background: linear-gradient(90deg, #ffe680, #ffd0f0 55%, #d9c6ff); border-bottom: 3px solid var(--sun);
+    box-shadow: 0 2px 10px rgba(60,20,140,.25); }
+  #level-name { font-weight: 800; font-size: 17px; margin-left: 6px; letter-spacing: .02em; color: #4a22a8; }
+  #level-name::before { content: "★ "; color: #ff9f1a; }
   .spacer { flex: 1; }
-  button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line);
-    border-radius: 8px; padding: 6px 12px; cursor: pointer; }
-  button:hover { background: #3a3029; }
-  button:disabled { opacity: .45; cursor: default; }
-  button.on { border-color: var(--accent); color: var(--accent); }
-  #btn-go { background: var(--go); border-color: #3b8a53; font-weight: 700; min-width: 96px; color: #fff; }
-  #btn-go.running { background: var(--reset); border-color: #b05e2c; }
+  button { font: inherit; color: var(--text); background: var(--panel2); border: 2px solid var(--line);
+    border-radius: 10px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
+  button:hover { background: #f4ecff; border-color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  button:disabled:hover { background: var(--panel2); border-color: var(--line); }
+  button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+  #btn-go { background: var(--go); border-color: #17a564; font-weight: 800; min-width: 96px; color: #fff;
+    box-shadow: 0 3px 0 #13874f; }
+  #btn-go:hover { background: #2fd88c; }
+  #btn-go.running { background: var(--reset); border-color: #e0602a; box-shadow: 0 3px 0 #c24f1e; }
 
-  #stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
-  #game { display: block; touch-action: none; cursor: default; border-radius: 4px; }
+  #stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative;
+    background:
+      radial-gradient(2px 2px at 8% 20%, #fff8 50%, transparent 51%),
+      radial-gradient(2px 2px at 92% 35%, #fff8 50%, transparent 51%),
+      radial-gradient(3px 3px at 15% 80%, #ffe06688 50%, transparent 51%),
+      radial-gradient(2px 2px at 85% 75%, #fff8 50%, transparent 51%),
+      radial-gradient(3px 3px at 50% 6%, #ffe06688 50%, transparent 51%); }
+  #game { display: block; touch-action: none; cursor: default; border-radius: 10px;
+    box-shadow: 0 0 0 4px #ffffff33, 0 12px 40px rgba(30,0,80,.45); }
   #game.panning { cursor: grabbing; }
 
-  #inventory { flex: none; display: flex; gap: 14px; padding: 8px 12px 10px; background: var(--panel);
-    border-top: 1px solid var(--line); overflow-x: auto; min-height: 112px; }
-  #inventory.locked { opacity: .45; pointer-events: none; }
+  #itembar { position: absolute; z-index: 5; display: flex; gap: 4px; padding: 4px; border-radius: 12px;
+    background: #ffffffee; border: 2px solid var(--accent); box-shadow: 0 6px 18px rgba(60,20,140,.35); }
+  #itembar button { width: 34px; height: 32px; padding: 0; font-size: 18px; line-height: 1; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; }
+  #itembar button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2;
+    stroke-linecap: round; stroke-linejoin: round; }
+  #itembar #ib-remove { color: #e0457b; }
+  #itembar .sep { width: 2px; background: var(--line); margin: 3px 1px; border-radius: 1px; }
+
+  #inventory { flex: none; display: flex; gap: 14px; padding: 8px 12px 10px; overflow-x: auto; min-height: 112px;
+    background: linear-gradient(180deg, #fff7d9, #ffefb8); border-top: 3px solid var(--sun); }
+  #inventory.locked { opacity: .5; pointer-events: none; }
   .group { flex: none; }
-  .group-title { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0 0 4px 2px; }
+  .group-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: #9b6bff; margin: 0 0 4px 2px; }
   .slots { display: flex; gap: 6px; }
-  .slot { position: relative; width: 96px; padding: 4px 6px 4px; border-radius: 8px; background: var(--panel2);
-    border: 1px solid var(--line); cursor: grab; text-align: center; touch-action: none; }
-  .slot:hover { border-color: var(--accent); }
+  .slot { position: relative; width: 96px; padding: 4px 6px 4px; border-radius: 12px; background: var(--panel2);
+    border: 2px solid var(--line); cursor: grab; text-align: center; touch-action: none; box-shadow: 0 2px 0 #e2ccff; }
+  .slot:hover { border-color: var(--accent); transform: translateY(-1px); }
   .slot.empty { opacity: .35; cursor: default; }
   .slot canvas { display: block; margin: 0 auto; pointer-events: none; }
-  .slot-label { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .badge { position: absolute; top: 3px; right: 5px; font-weight: 700; font-size: 12px; color: var(--accent); }
+  .slot-label { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge { position: absolute; top: 3px; right: 5px; font-weight: 800; font-size: 12px; color: #fff;
+    background: var(--accent); border-radius: 8px; padding: 0 5px; }
 
-  #tooltip { position: fixed; z-index: 30; pointer-events: none; background: #0d0b0aee; border: 1px solid var(--line);
-    padding: 6px 9px; border-radius: 6px; max-width: 240px; display: flex; flex-direction: column; gap: 2px; }
-  #tooltip span { color: var(--muted); font-size: 12px; }
-  #tooltip i { color: var(--accent); font-size: 12px; font-style: normal; }
+  #tooltip { position: fixed; z-index: 30; pointer-events: none; background: #3a1f7aee; color: #fff; border: 2px solid var(--sun);
+    padding: 6px 9px; border-radius: 8px; max-width: 240px; display: flex; flex-direction: column; gap: 2px; }
+  #tooltip span { color: #e0d0ff; font-size: 12px; }
+  #tooltip i { color: var(--sun); font-size: 12px; font-style: normal; }
 
-  #hint { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: #0d0b0add;
-    border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px 8px 14px; display: flex; gap: 10px; align-items: center; }
+  #hint { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: #fffbeaee;
+    border: 2px solid var(--sun); border-radius: 12px; padding: 8px 10px 8px 14px; display: flex; gap: 10px; align-items: center;
+    font-weight: 600; box-shadow: 0 6px 18px rgba(60,20,140,.3); }
 
-  .modal { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px 26px; min-width: 300px;
-    box-shadow: 0 20px 50px rgba(0,0,0,.5); text-align: center; }
-  .card h2 { margin: 0 0 6px; font-size: 22px; }
+  .modal { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(40,10,100,.35); }
+  .card { background: var(--panel); border: 3px solid var(--sun); border-radius: 18px; padding: 22px 26px; min-width: 300px;
+    box-shadow: 0 20px 50px rgba(40,10,100,.45); text-align: center; }
+  .card h2 { margin: 0 0 6px; font-size: 22px; color: #4a22a8; }
   .card p { margin: 0 0 16px; color: var(--muted); }
   .card .row { display: flex; gap: 10px; justify-content: center; }
-  .card .primary { background: var(--go); border-color: #3b8a53; color: #fff; font-weight: 700; }
+  .card .primary { background: var(--go); border-color: #17a564; color: #fff; font-weight: 800; }
   #win { background: transparent; pointer-events: none; align-items: flex-start; padding-top: 14vh; }
   #win .card { pointer-events: auto; }
+  #win h2::before, #win h2::after { content: " ★ "; color: #ff9f1a; }
 
   #help { position: fixed; z-index: 25; right: 12px; top: 56px; }
   #help .card { text-align: left; }
   #help table { border-collapse: collapse; }
   #help td { padding: 3px 10px 3px 0; vertical-align: top; }
-  #help td:first-child { color: var(--accent); white-space: nowrap; }
+  #help td:first-child { color: var(--accent); font-weight: 700; white-space: nowrap; }
 
-  #select { position: fixed; inset: 0; z-index: 15; background: radial-gradient(circle at 50% 30%, #2b231d, #120f0d 70%);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 16px; overflow: auto; }
-  #select h1 { margin: 0; font-size: 44px; letter-spacing: .04em; }
-  #select h1 b { color: var(--accent); }
-  #select .sub { color: var(--muted); margin-top: -12px; text-align: center; max-width: 560px; }
+  #select { position: fixed; inset: 0; z-index: 15; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; padding: 16px; overflow: auto;
+    background:
+      radial-gradient(3px 3px at 10% 15%, #fff 50%, transparent 51%),
+      radial-gradient(2px 2px at 25% 70%, #fff 50%, transparent 51%),
+      radial-gradient(3px 3px at 80% 20%, #ffe066 50%, transparent 51%),
+      radial-gradient(2px 2px at 70% 85%, #fff 50%, transparent 51%),
+      radial-gradient(3px 3px at 92% 55%, #ffd0f0 50%, transparent 51%),
+      radial-gradient(circle at 50% 18%, #ffe680 0, #ffb86b 14%, #c46bff 42%, #5b34c9 75%); }
+  #select h1 { margin: 0; font-size: 52px; letter-spacing: .04em; color: #fff; text-shadow: 0 4px 0 #4a22a8, 0 8px 24px rgba(40,10,100,.5); }
+  #select h1 b { color: var(--sun); }
+  #select .sub { color: #fff; font-weight: 600; margin-top: -12px; text-align: center; max-width: 560px; text-shadow: 0 1px 3px rgba(40,10,100,.6); }
   #level-list { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
-  .level-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; width: 322px; text-align: left; border-radius: 12px; }
-  .level-card:hover { border-color: var(--accent); }
-  .level-card canvas { border-radius: 6px; display: block; }
-  .level-card.done { border-color: #6c8f4e; }
-  .level-title { display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; }
-  .tick { color: #9fd67a; font-size: 13px; }
+  .level-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; width: 322px; text-align: left; border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(40,10,100,.35); }
+  .level-card:hover { border-color: var(--sun); transform: translateY(-2px); background: #fff; }
+  .level-card canvas { border-radius: 8px; display: block; }
+  .level-card.done { border-color: var(--go); }
+  .level-title { display: flex; justify-content: space-between; font-weight: 800; font-size: 16px; }
+  .tick { color: #17a564; font-size: 13px; }
   .level-desc { color: var(--muted); font-size: 12.5px; }
 </style>
 </head>
@@ -106,6 +141,15 @@
   </header>
   <main id="stage">
     <canvas id="game"></canvas>
+    <div id="itembar" class="hidden">
+      <button id="ib-rot-l" title="Rotate left 15° (Q)"><svg viewBox="0 0 24 24"><path d="M4 4v5h5"/><path d="M4.5 9A8 8 0 1 1 6 17"/></svg></button>
+      <button id="ib-rot-r" title="Rotate right 15° (E, right-click)"><svg viewBox="0 0 24 24"><path d="M20 4v5h-5"/><path d="M19.5 9A8 8 0 1 0 18 17"/></svg></button>
+      <span class="sep"></span>
+      <button id="ib-flip-h" title="Mirror left–right (F)"><svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M9 7 4 12l5 5z"/><path d="M15 7l5 5-5 5z"/></svg></button>
+      <button id="ib-flip-v" title="Mirror upside down (V)"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><path d="M7 9l5-5 5 5z"/><path d="M7 15l5 5 5-5z"/></svg></button>
+      <span class="sep"></span>
+      <button id="ib-remove" title="Back to the box (Delete)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
     <div id="hint" class="hidden">Ball stopped — Reset? <button id="hint-reset">↺ Reset</button></div>
   </main>
   <footer id="inventory"></footer>
@@ -139,8 +183,11 @@
     <table>
       <tr><td>Drag from panel</td><td>place an item</td></tr>
       <tr><td>Drag item</td><td>move it</td></tr>
+      <tr><td>Click item</td><td>select it: toolbar with rotate / mirror / remove</td></tr>
+      <tr><td>Drag the ⟳ handle</td><td>rotate freely (15° steps, Shift: 1°)</td></tr>
+      <tr><td>Right-click item</td><td>rotate 15° (Shift: other way)</td></tr>
       <tr><td>Q / E, wheel while dragging</td><td>rotate 15°</td></tr>
-      <tr><td>F</td><td>flip (curved track, carriage, domino fall side…)</td></tr>
+      <tr><td>F / V (Shift+F)</td><td>mirror left–right / upside down</td></tr>
       <tr><td>Delete / drag to panel</td><td>return item to inventory</td></tr>
       <tr><td>Space</td><td>Go / Reset</td></tr>
       <tr><td>R</td><td>Reset during a run</td></tr>

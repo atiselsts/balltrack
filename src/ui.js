@@ -1,8 +1,9 @@
 // DOM UI: top bar, inventory panel, tooltip, hint toast, win panel,
 // confirm dialog and the level select screen.
-import { ITEM_TYPES, GROUP_ORDER, typeDef, hintOf } from "./items.js";
-import { drawItemIcon, drawWorld } from "./render.js";
-import { levelFixedItems } from "./physics.js";
+import { ITEM_TYPES, GROUP_ORDER, typeDef, hintOf, isRotatable, isFlippable } from "./items.js";
+import { drawItemIcon, drawWorld, worldToScreen } from "./render.js";
+import { levelFixedItems, itemParts } from "./physics.js";
+import { bounds } from "./geometry.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -14,7 +15,9 @@ export function initUI(G) {
   const confirmBox = $("confirm");
   const select = $("select");
   const help = $("help");
+  const itembar = $("itembar");
   let confirmResolve = null;
+  let itembarKey = "";
 
   // Buttons must never keep focus, or Space would also "click" them.
   for (const b of document.querySelectorAll("button")) {
@@ -36,6 +39,16 @@ export function initUI(G) {
   $("win-next").addEventListener("click", () => G.nextLevel());
   $("win-replay").addEventListener("click", () => G.reset());
   $("hint-reset").addEventListener("click", () => G.reset());
+  $("ib-rot-l").addEventListener("click", () => G.selected && G.rotateItem(G.selected, -1));
+  $("ib-rot-r").addEventListener("click", () => G.selected && G.rotateItem(G.selected, 1));
+  $("ib-flip-h").addEventListener("click", () => G.selected && G.flipItem(G.selected, false));
+  $("ib-flip-v").addEventListener("click", () => G.selected && G.flipItem(G.selected, true));
+  $("ib-remove").addEventListener("click", () => {
+    if (!G.selected || typeDef(G.selected.type).category !== "inventory") return;
+    G.returnToInventory(G.selected);
+    G.changed();
+  });
+  itembar.addEventListener("pointerdown", (e) => e.stopPropagation());
   $("confirm-yes").addEventListener("click", () => closeConfirm(true));
   $("confirm-no").addEventListener("click", () => closeConfirm(false));
 
@@ -129,6 +142,52 @@ export function initUI(G) {
       $("btn-restart").disabled = G.phase !== "build";
     },
 
+    // Floating rotate / flip / remove buttons under the selected item.
+    syncItemBar() {
+      const it = G.selected;
+      const d = G.drag;
+      const show = G.screen === "game" && G.phase === "build" && it && !it.hidden && !G.rotDrag && !(d && (d.moved || d.isNew));
+      if (!show) {
+        if (itembarKey !== "") itembar.classList.add("hidden");
+        itembarKey = "";
+        return;
+      }
+      const def = typeDef(it.type);
+      const b = itemParts(it).reduce((acc, p) => {
+        const pb = bounds(p.poly);
+        return {
+          minX: Math.min(acc.minX, pb.minX),
+          minY: Math.min(acc.minY, pb.minY),
+          maxX: Math.max(acc.maxX, pb.maxX),
+          maxY: Math.max(acc.maxY, pb.maxY),
+        };
+      }, { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+      const top = worldToScreen(G.cam, (b.minX + b.maxX) / 2, b.minY);
+      const bot = worldToScreen(G.cam, (b.minX + b.maxX) / 2, b.maxY);
+      const cr = G.canvas.getBoundingClientRect();
+      const sr = itembar.parentElement.getBoundingClientRect();
+      const ox = cr.left - sr.left;
+      const oy = cr.top - sr.top;
+      const W = itembar.offsetWidth || 200;
+      const H = itembar.offsetHeight || 40;
+      let y = oy + bot.y + 12;
+      if (y + H > oy + cr.height - 4) y = oy + top.y - H - 52; // no room below: go above the rotate handle
+      const x = Math.max(4, Math.min(sr.width - W - 4, ox + bot.x - W / 2));
+      y = Math.max(4, Math.min(sr.height - H - 4, y));
+      const rot = isRotatable(def);
+      const key = `${it.id}|${Math.round(x)}|${Math.round(y)}`;
+      if (key === itembarKey) return;
+      itembarKey = key;
+      itembar.style.left = `${Math.round(x)}px`;
+      itembar.style.top = `${Math.round(y)}px`;
+      $("ib-rot-l").disabled = !rot;
+      $("ib-rot-r").disabled = !rot;
+      $("ib-flip-h").disabled = !isFlippable(def);
+      $("ib-flip-v").disabled = !isFlippable(def) || !rot;
+      $("ib-remove").disabled = def.category !== "inventory";
+      itembar.classList.remove("hidden");
+    },
+
     isOverPanel(x, y) {
       const r = panel.getBoundingClientRect();
       return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
@@ -184,7 +243,7 @@ export function initUI(G) {
         const ctx = c.getContext("2d");
         const s = Math.min(w / lv.size.w, h / lv.size.h);
         ctx.scale(dpr, dpr);
-        ctx.fillStyle = "#1a1714";
+        ctx.fillStyle = "#3b2477";
         ctx.fillRect(0, 0, w, h);
         ctx.translate((w - lv.size.w * s) / 2, (h - lv.size.h * s) / 2);
         ctx.scale(s, s);

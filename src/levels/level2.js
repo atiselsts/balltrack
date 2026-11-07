@@ -7,9 +7,9 @@ export default {
   spawn: { x: 200, y: 100 },
   switch: { x: 3156, y: 530 },
   rooms: [
-    { x: 30, y: 30, w: 1070, h: 830, wallpaper: "#cfe0d6", stripe: "#c3d7cb", name: "Kitchen", window: { x: 700, y: 150, w: 220, h: 170 } },
-    { x: 1130, y: 30, w: 1170, h: 830, wallpaper: "#e6d3bf", stripe: "#dcc6ae", name: "Living room", picture: { x: 1500, y: 260, w: 200, h: 130 } },
-    { x: 2330, y: 30, w: 840, h: 830, wallpaper: "#d4d1e6", stripe: "#c8c4dd", name: "Hallway" },
+    { x: 30, y: 30, w: 1070, h: 830, wallpaper: "#bff5d8", stripe: "#acefcb", name: "Kitchen", window: { x: 700, y: 150, w: 220, h: 170 } },
+    { x: 1130, y: 30, w: 1170, h: 830, wallpaper: "#ffd6b0", stripe: "#ffca9c", name: "Living room", picture: { x: 1500, y: 260, w: 200, h: 130 } },
+    { x: 2330, y: 30, w: 840, h: 830, wallpaper: "#e2d2ff", stripe: "#d6c1ff", name: "Hallway" },
   ],
   walls: [
     { x: 0, y: 0, w: 3200, h: 30 },
