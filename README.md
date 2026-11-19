@@ -3,6 +3,8 @@
 Browser physics puzzle: build a path from household items so a bouncy ball hits the light switch.
 Implements `full_spec.md` (v1 + v2): Bedroom, Apartment and House levels.
 
+![Ball Track: the Bedroom level with its solution placed](screenshot.png)
+
 ## Run
 
     python3 -m http.server
